@@ -2,6 +2,9 @@
 
 An AI-powered resume screening system that compares a candidate's resume with a job description using Natural Language Processing, Sentence-BERT semantic similarity, and skill matching.
 
+## Live demo
+Try the deployed app here: https://smart-resume-screening.streamlit.app
+
 ## Project Overview
 
 Recruiters often receive many resumes and manually compare them with job requirements.  
@@ -58,9 +61,4 @@ Checks required skills present in resume.
 
 70% Semantic Similarity + 30% Skill Match
 
-## Run Locally
 
-```bash
-conda activate tf_env
-cd ~/Desktop/resume_matcher_project
-streamlit run app.py
