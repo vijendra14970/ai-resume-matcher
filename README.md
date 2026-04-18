@@ -7,7 +7,7 @@ Try the deployed app here: https://smart-resume-screening.streamlit.app
 
 ## Screenshot
 
-![AI Resume Matcher](app-screenshot.png)
+![AI Resume Matcher](app_screenshot.png)
 
 ## Project Overview
 
