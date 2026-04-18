@@ -5,6 +5,10 @@ An AI-powered resume screening system that compares a candidate's resume with a 
 ## Live demo
 Try the deployed app here: https://smart-resume-screening.streamlit.app
 
+## Screenshot
+
+![AI Resume Matcher](app-screenshot.png)
+
 ## Project Overview
 
 Recruiters often receive many resumes and manually compare them with job requirements.  
