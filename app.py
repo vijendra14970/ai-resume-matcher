@@ -1,9 +1,6 @@
 import streamlit as st
-import spacy
 import pdfplumber
 import re
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 
 # -------------------------------------------------
 # PAGE CONFIG
@@ -11,24 +8,28 @@ from sklearn.metrics.pairwise import cosine_similarity
 st.set_page_config(page_title="AI Resume Matcher", layout="wide")
 
 # -------------------------------------------------
-# SAFE MODEL LOADING (IMPORTANT FOR STREAMLIT CLOUD)
+# SAFE IMPORTS (lazy-loaded to avoid cloud crashes)
 # -------------------------------------------------
 
 @st.cache_resource
-def load_spacy():
+def load_nlp():
+    import spacy
     try:
         return spacy.load("en_core_web_sm")
     except:
-        import os
-        os.system("python -m spacy download en_core_web_sm")
+        import subprocess
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
         return spacy.load("en_core_web_sm")
 
 @st.cache_resource
 def load_model():
+    from sentence_transformers import SentenceTransformer
     return SentenceTransformer("all-MiniLM-L6-v2")
 
-nlp = load_spacy()
+nlp = load_nlp()
 model = load_model()
+
+from sklearn.metrics.pairwise import cosine_similarity
 
 # -------------------------------------------------
 # SKILL DATABASE
@@ -76,28 +77,28 @@ def extract_skills(text):
 # PDF TEXT EXTRACTION
 # -------------------------------------------------
 
-def extract_text_from_pdf(file):
+def extract_text(file):
     text = ""
     with pdfplumber.open(file) as pdf:
         for page in pdf.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + " "
+            t = page.extract_text()
+            if t:
+                text += t + " "
     return text
 
 # -------------------------------------------------
-# CORE ANALYSIS
+# ANALYSIS ENGINE
 # -------------------------------------------------
 
-def analyze_resume(resume_text, job_text):
+def analyze(resume_text, job_text):
 
     resume_clean = preprocess(resume_text)
     job_clean = preprocess(job_text)
 
-    emb_resume = model.encode([resume_clean])
-    emb_job = model.encode([job_clean])
+    emb_r = model.encode([resume_clean])
+    emb_j = model.encode([job_clean])
 
-    semantic_score = cosine_similarity(emb_resume, emb_job)[0][0]
+    semantic_score = cosine_similarity(emb_r, emb_j)[0][0]
 
     resume_skills = extract_skills(resume_text)
     job_skills = extract_skills(job_text)
@@ -114,13 +115,13 @@ def analyze_resume(resume_text, job_text):
 # UI
 # -------------------------------------------------
 
-st.title("AI Resume Matcher")
+st.title("AI Resume Matcher (Multi-Candidate Ranking)")
 st.write("Upload multiple resumes and compare them with a job description.")
 
 job_text = st.text_area("Paste Job Description")
 
 uploaded_files = st.file_uploader(
-    "Upload Resumes (PDF)",
+    "Upload Resume PDFs",
     type=["pdf"],
     accept_multiple_files=True
 )
@@ -128,22 +129,19 @@ uploaded_files = st.file_uploader(
 if st.button("Rank Candidates"):
 
     if not job_text.strip():
-        st.warning("Please enter job description")
+        st.warning("Please enter a job description.")
         st.stop()
 
     if not uploaded_files:
-        st.warning("Please upload at least one resume")
+        st.warning("Please upload at least one resume.")
         st.stop()
 
     results = []
 
     for file in uploaded_files:
-        resume_text = extract_text_from_pdf(file)
+        resume_text = extract_text(file)
 
-        score, res_skills, job_skills, matched = analyze_resume(
-            resume_text,
-            job_text
-        )
+        score, res_skills, job_skills, matched = analyze(resume_text, job_text)
 
         results.append({
             "name": file.name,
@@ -158,7 +156,7 @@ if st.button("Rank Candidates"):
 
     for i, r in enumerate(results, 1):
         st.markdown(f"### Rank {i}")
-        st.write("**Name:**", r["name"])
+        st.write("**Candidate:**", r["name"])
         st.write("**Score:**", r["score"], "%")
         st.write("**Skills:**", r["skills"])
         st.write("**Matched Skills:**", r["matched"])
