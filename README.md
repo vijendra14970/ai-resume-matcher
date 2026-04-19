@@ -1,42 +1,62 @@
-# AI Resume Matcher
+# AI Resume Matcher (Multi-Candidate Ranking System)
 
-A resume–job description matching system that evaluates candidate suitability using NLP-based semantic similarity and skill-based scoring.
+An AI-powered resume screening application that compares multiple candidate resumes against a job description and ranks applicants based on semantic relevance and skill matching.
 
-The system combines Sentence-BERT embeddings with rule-based skill extraction to produce a weighted match score.
+## Live Demo
 
-Live Demo  
 https://smart-resume-screening.streamlit.app
-
----
-## Screenshot
-
-![AI Resume Matcher](app_screenshot.png)
-
----
-
-## Problem Statement
-
-Recruiters often need to manually scan and compare resumes against job descriptions. This process is time-consuming and inconsistent when dealing with large volumes of applications.
-
-This project automates the initial screening phase by computing:
-
-- Semantic similarity between resume and job description
-- Skill overlap between candidate and job requirements
-- Missing required skills for gap analysis
 
 ---
 
 ## Features
 
-- Upload resume in PDF format
-- Extract structured text from resume
-- Paste job description for comparison
-- NLP-based text preprocessing using spaCy
-- Semantic matching using Sentence-BERT embeddings
-- Skill extraction with alias-based dictionary matching
-- Identification of missing skills
-- Weighted scoring system for ranking suitability
-- Streamlit-based interactive interface
+- Upload multiple resumes in PDF format
+- Paste a job description
+- Automatic resume text extraction
+- NLP preprocessing using spaCy
+- Semantic similarity scoring using Sentence-BERT
+- Skill extraction using keyword matching
+- Candidate ranking from highest to lowest score
+- Recruiter-friendly shortlist workflow
+
+---
+
+## Screenshot
+
+![App Screenshot](app_resumescreenshot.png)
+
+---
+
+## How It Works
+
+### Input:
+- Multiple resumes (PDF)
+- One job description
+
+### Processing:
+1. Extract text from resumes
+2. Clean and preprocess text
+3. Generate embeddings using SentenceTransformer
+4. Compute semantic similarity
+5. Detect skills in resumes and JD
+6. Combine scores
+
+### Output:
+- Ranked candidates
+- Match scores
+- Candidate skills
+- Matched skills
+
+---
+
+## Scoring Logic
+
+Final Score =
+
+- 70% Semantic Similarity
+- 30% Skill Match Score
+
+This balances contextual relevance and explicit skill overlap.
 
 ---
 
@@ -44,88 +64,35 @@ This project automates the initial screening phase by computing:
 
 - Python
 - Streamlit
-- spaCy (`en_core_web_sm`)
-- Sentence-Transformers (`all-MiniLM-L6-v2`)
-- scikit-learn (cosine similarity)
+- spaCy
+- Sentence-Transformers
+- scikit-learn
 - pdfplumber
-- Regular Expressions
+- pandas
+- torch
 
 ---
 
-## System Architecture
-PDF Resume
-↓
-Text Extraction (pdfplumber)
-↓
-Preprocessing (spaCy: lemmatization, stopword removal)
-↓
-Embedding Generation (Sentence-BERT)
-↓
-Semantic Similarity (cosine similarity)
-↓
-Skill Extraction (rule-based alias matching)
-↓
-Skill Matching + Gap Analysis
-↓
-Weighted Score Computation
-↓
-Final Output Score
+## Use Cases
+
+- Recruiters screening applicants
+- HR shortlist automation
+- Internal hiring tools
+- Resume relevance scoring
 
 ---
 
-## Scoring Logic
-
-The final score is computed as a weighted combination:
-
-- Semantic similarity score: 70%
-- Skill match score: 30%
-
-Skill match is computed as:
-
-- ratio of matched job skills to total required skills
-
-This weighting prioritizes semantic understanding while still ensuring explicit skill alignment.
-
----
-
-## Skill Detection Approach
-
-Skills are extracted using:
-- Keyword alias mapping (e.g., "ML" → "machine learning")
-- Regex-based exact word matching
-
-This approach ensures interpretability but may miss contextual or implicit skill mentions.
-
----
-
-## Limitations
-
-- Skill extraction is rule-based and not context-aware
-- Does not evaluate experience depth or seniority level
-- Sentence-BERT similarity may not fully capture structured resume formatting
-- Fixed weighting scheme is not learned or optimized on dataset
-- Performance depends on quality of resume text extraction
-
----
-
-## Future Improvements
-
-- Learning-to-rank model for dynamic scoring
-- Resume parsing with layout-aware NLP models
-- Experience and seniority estimation
-- Multi-candidate ranking dashboard
-- Fine-tuned transformer model for recruitment domain
-- Bias detection in resume screening
-
----
-
-## How to Run
+## How to Run Locally
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
+## Author Note
 
-Author Note
+This project was built to explore practical applications of NLP in recruitment workflows.  
+The goal was to create a usable prototype that can help compare multiple resumes against a job description using semantic similarity and skill-based scoring.
 
-This project was built as an NLP-based resume screening prototype to explore semantic similarity models and rule-based skill extraction in real-world HR use cases.
+It reflects hands-on work in machine learning deployment, text processing, and building end-to-end AI products.
+
+— Vijendra
