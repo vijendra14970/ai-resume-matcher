@@ -6,17 +6,14 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # -------------------------------------------------
-# Load NLP Models
+# LOAD MODELS
 # -------------------------------------------------
 
-# spaCy model for text preprocessing
 nlp = spacy.load("en_core_web_sm")
-
-# Sentence-BERT model for semantic similarity
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # -------------------------------------------------
-# Skill Dictionary with Aliases
+# SKILL DATABASE
 # -------------------------------------------------
 
 skills_db = {
@@ -34,135 +31,119 @@ skills_db = {
 }
 
 # -------------------------------------------------
-# Text Preprocessing Function
+# TEXT PREPROCESSING
 # -------------------------------------------------
 
 def preprocess(text):
-    """
-    Clean text using spaCy:
-    - lowercase
-    - remove stopwords
-    - lemmatization
-    """
     doc = nlp(text.lower())
-    clean_tokens = [token.lemma_ for token in doc if not token.is_stop]
-    return " ".join(clean_tokens)
+    tokens = [token.lemma_ for token in doc if not token.is_stop]
+    return " ".join(tokens)
 
 # -------------------------------------------------
-# Skill Extraction Function
+# SKILL EXTRACTION
 # -------------------------------------------------
 
 def extract_skills(text):
-    """
-    Detect skills using aliases with exact word matching.
-    """
     text = text.lower()
     found_skills = []
 
     for main_skill, aliases in skills_db.items():
         for term in aliases:
-            pattern = r"\b" + re.escape(term) + r"\b"
-
-            if re.search(pattern, text):
+            if re.search(r"\b" + re.escape(term) + r"\b", text):
                 found_skills.append(main_skill)
                 break
 
     return list(set(found_skills))
 
 # -------------------------------------------------
-# PDF Text Extraction
+# PDF TEXT EXTRACTION
 # -------------------------------------------------
 
-def extract_text_from_pdf(uploaded_file):
-    """
-    Read uploaded PDF and extract text page by page.
-    """
+def extract_text_from_pdf(file):
     text = ""
-
-    with pdfplumber.open(uploaded_file) as pdf:
+    with pdfplumber.open(file) as pdf:
         for page in pdf.pages:
-            page_text = page.extract_text()
-
-            if page_text:
-                text += page_text + " "
-
+            if page.extract_text():
+                text += page.extract_text() + " "
     return text
 
 # -------------------------------------------------
-# Main Analysis Function
+# CORE SCORING FUNCTION
 # -------------------------------------------------
 
-def analyze_resume(resume, job):
+def analyze_resume(resume_text, job_text):
 
-    # Step 1: Preprocess text
-    clean_resume = preprocess(resume)
-    clean_job = preprocess(job)
+    clean_resume = preprocess(resume_text)
+    clean_job = preprocess(job_text)
 
-    # Step 2: Convert text to embeddings
     emb1 = model.encode([clean_resume])
     emb2 = model.encode([clean_job])
 
-    # Step 3: Semantic similarity
     semantic_score = cosine_similarity(emb1, emb2)[0][0]
 
-    # Step 4: Skill extraction
-    resume_skills = extract_skills(resume)
-    job_skills = extract_skills(job)
+    resume_skills = extract_skills(resume_text)
+    job_skills = extract_skills(job_text)
 
-    # Step 5: Missing skills
-    missing_skills = [
-        skill for skill in job_skills
-        if skill not in resume_skills
-    ]
+    matched = [s for s in job_skills if s in resume_skills]
 
-    # Step 6: Matching skills
-    matching_skills = [
-        skill for skill in job_skills
-        if skill in resume_skills
-    ]
+    skill_score = len(matched) / len(job_skills) if job_skills else 0
 
-    # Step 7: Skill score
-    if len(job_skills) > 0:
-        skill_score = len(matching_skills) / len(job_skills)
-    else:
-        skill_score = 0
-
-    # Step 8: Final weighted score
     final_score = (0.7 * semantic_score) + (0.3 * skill_score)
 
-    return final_score, resume_skills, job_skills, missing_skills
+    return final_score, resume_skills, job_skills, matched
 
 # -------------------------------------------------
-# Streamlit UI
+# STREAMLIT UI
 # -------------------------------------------------
 
-st.title("AI Resume Matcher")
+st.title("AI Resume Matcher - Ranking System")
 
-st.write("Upload your resume PDF and compare it with a job description.")
-
-uploaded_file = st.file_uploader(
-    "Upload Resume PDF",
-    type=["pdf"]
-)
+st.write("Upload multiple resumes and compare them with a job description.")
 
 job_text = st.text_area("Paste Job Description")
 
-if st.button("Analyze"):
+uploaded_files = st.file_uploader(
+    "Upload Resumes (PDF)",
+    type=["pdf"],
+    accept_multiple_files=True
+)
 
-    if uploaded_file is not None and job_text.strip() != "":
+if st.button("Rank Candidates"):
 
-        # Extract resume text
-        resume_text = extract_text_from_pdf(uploaded_file)
+    if uploaded_files and job_text.strip() != "":
 
-        # Analyze
-        result = analyze_resume(resume_text, job_text)
+        results = []
 
-        # Output
-        st.subheader("Results")
-        st.write("Final Match Score:", round(result[0] * 100, 2), "%")
-        st.write("Resume Skills:", result[1])
-        st.write("Job Skills:", result[2])
-        st.write("Missing Skills:", result[3])
+        # PROCESS EACH RESUME
+        for file in uploaded_files:
+
+            resume_text = extract_text_from_pdf(file)
+
+            score, res_skills, job_skills, matched = analyze_resume(
+                resume_text,
+                job_text
+            )
+
+            results.append({
+                "Candidate": file.name,
+                "Score": round(score * 100, 2),
+                "Skills": res_skills,
+                "Matched Skills": matched
+            })
+
+        # SORT BY SCORE
+        results = sorted(results, key=lambda x: x["Score"], reverse=True)
+
+        # DISPLAY RANKING
+        st.subheader("Candidate Ranking")
+
+        for i, r in enumerate(results):
+            st.write(f"Rank {i+1}")
+            st.write("Name:", r["Candidate"])
+            st.write("Score:", r["Score"], "%")
+            st.write("Skills:", r["Skills"])
+            st.write("Matched Skills:", r["Matched Skills"])
+            st.write("---")
 
     else:
-        st.warning("Please upload a resume and paste a job description.")
+        st.warning("Please upload resumes and paste job description.")
