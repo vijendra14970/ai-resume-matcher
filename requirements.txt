@@ -1,8 +1,7 @@
 streamlit
-spacy==3.8.0
+spacy
 pdfplumber
 sentence-transformers
 scikit-learn
 numpy
 pandas
-transformers
